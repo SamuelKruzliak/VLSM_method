@@ -1,44 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace VLSM_final_version
+namespace ConsoleApp100
 {
     class Program
     {
         static void Main(string[] args)
         {
-           List<string> list = new List<string>();
-           SubnetMaker subnetMaker = new SubnetMaker();
+            List<string> list = new List<string>();
+            SubnetMaker subnetMaker = new SubnetMaker();
 
-           subnetMaker.ParseIpAddress("172.168.0.0/16");
-           subnetMaker.ParseHosts("1000,700,500,200,100,50,20,2");
-           list = subnetMaker.CalculateSubnets();
+            Console.Write("Zadaj Ip adresu s prefixom: "); 
+            subnetMaker.ParseIpAddress(Console.ReadLine());
+            
+            Console.Write("Zadaj pocty hostov: ");
+            subnetMaker.ParseHosts(Console.ReadLine());
 
-           foreach(string item in list){
-            Console.WriteLine(item);
-           }
+            list = subnetMaker.CalculateSubnets();
+
+            foreach (string item in list)
+            {
+                Console.WriteLine(item);
+            }
+
+            Console.ReadLine();
 
         }
     }
     class InputParser
     {
-        static public int[] IpAddressParts;
-        static public int[] Hosts;
-        public void ParseIpAddress(string ipAddress){
-            char[] separators = new char[] {'.', '/'};
+        public static int[] IpAddressParts;
+        public static int[] Hosts;
+        public void ParseIpAddress(string ipAddress)
+        {
+            char[] separators = new char[] { '.', '/' };
             IpAddressParts = Array.ConvertAll(ipAddress.Split(separators), s => int.Parse(s));
         }
-        public void ParseHosts(string hosts){
+        public void ParseHosts(string hosts)
+        {
             Hosts = Array.ConvertAll(hosts.Split(','), s => int.Parse(s));
         }
     }
-    
-    class SubnetMaker:InputParser
+
+    class SubnetMaker : InputParser
     {
-        static public int[] Prefixes = new int[Hosts.Length];
-        static void getPrefixList(){
-            for(int i = 0; i < Hosts.Length; i++){
-                Prefixes[i] = getPrefix(Hosts[i]);
+       // static int[] Prefixes = new int[Hosts.Length];
+        static List<int> Prefixes = new List<int>();
+        static void getPrefixList()
+        {
+            for (int i = 0; i < Hosts.Length; i++)
+            {
+                Prefixes.Add(getPrefix(Hosts[i]));
             }
         }
         public List<string> CalculateSubnets()
@@ -50,7 +62,7 @@ namespace VLSM_final_version
             string currentSubnet;
             getPrefixList();
 
-            for (int i = 0; i < Prefixes.Length; i++)
+            for (int i = 0; i < Prefixes.Count; i++)
             {
                 selected_part = calculatePart(Prefixes[i])[0];
                 num = calculatePart(Prefixes[i])[1];
