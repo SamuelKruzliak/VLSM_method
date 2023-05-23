@@ -17,14 +17,16 @@ namespace ConsoleApp100
             subnetMaker.ParseHosts(Console.ReadLine());
 
             list = subnetMaker.CalculateSubnets();
+            
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("Subnety: ");
 
             foreach (string item in list)
             {
                 Console.WriteLine(item);
             }
-
             Console.ReadLine();
-
+            
         }
     }
     class InputParser
@@ -41,45 +43,69 @@ namespace ConsoleApp100
             Hosts = Array.ConvertAll(hosts.Split(','), s => int.Parse(s));
         }
     }
-
     class SubnetMaker : InputParser
     {
-       // static int[] Prefixes = new int[Hosts.Length];
         static List<int> Prefixes = new List<int>();
         static void getPrefixList()
         {
-            for (int i = 0; i < Hosts.Length; i++)
-            {
+            for(int i = 0; i < Hosts.Length; i++)
                 Prefixes.Add(getPrefix(Hosts[i]));
-            }
         }
         public List<string> CalculateSubnets()
         {
             List<string> Subnets = new List<string>();
-            int add_value = 0;
-            int selected_part = 4;
-            int num;
             string currentSubnet;
             getPrefixList();
-
-            for (int i = 0; i < Prefixes.Count; i++)
+            int add_value;
+            int[] nn = IpAddressParts;
+            foreach(int prefix in Prefixes)
             {
-                selected_part = calculatePart(Prefixes[i])[0];
-                num = calculatePart(Prefixes[i])[1];
-                currentSubnet = $"{IpAddressParts[0]}.{IpAddressParts[1]}.{IpAddressParts[2]}.{IpAddressParts[3]} /{Prefixes[i]} Subnet mask: {GetSubnetMask(Prefixes[i])}";
-                Subnets.Add($"{currentSubnet}");
-                add_value = Convert.ToInt32(Math.Pow(2, num));
-
-                if (add_value + IpAddressParts[selected_part] > 255)
+                add_value = Convert.ToInt32(Math.Pow(2, 8*(prefix/8+1)-prefix));
+                currentSubnet = $"{IpAddressParts[0]}.{IpAddressParts[1]}.{IpAddressParts[2]}.{IpAddressParts[3]} /{prefix} Subnet mask: {GetSubnetMask(prefix)} ";
+                currentSubnet += GetIpInfo(IpAddressParts, prefix, prefix/8);
+                
+                Subnets.Add(currentSubnet);
+                if (add_value + IpAddressParts[prefix/8] > 255)
                 {
-                    IpAddressParts[selected_part - 1]++;
-                    add_value = 0;
-                    IpAddressParts[selected_part] = 0;
+                    IpAddressParts[prefix/8 - 1]++;
+                    IpAddressParts[prefix/8] = 0;
                 }
-                IpAddressParts[selected_part] += add_value;
+                else
+                    IpAddressParts[prefix/8] += add_value;
             }
 
             return Subnets;
+        }
+        private string GetIpInfo(int[] x, int prefix, int part){
+        string firstHost;
+        string lastHost;
+        string broadcast;
+        byte[] IpParts = Array.ConvertAll(x, s=>Convert.ToByte(s));
+        if(part != 3)
+            IpParts[part+1] += 1;
+        else
+            IpParts[part] += 1;
+        firstHost = $"{IpParts[0]}.{IpParts[1]}.{IpParts[2]}.{IpParts[3]}";
+
+        if(part != 3)
+            IpParts[part+1] -= 1;
+        else
+            IpParts[part] -= 1;
+        
+
+        for(int i = 8*(prefix/8+1)-prefix-1; i >=0; i--)
+            if(IpParts[part] != 255)
+                IpParts[part] += Convert.ToByte(Math.Pow(2,i));
+
+        for(int i = part+1; i<=3; i++)
+            IpParts[i] = 255;
+
+        broadcast = $"{IpParts[0]}.{IpParts[1]}.{IpParts[2]}.{IpParts[3]}";
+        IpParts[3] -= 1;
+        lastHost = $"{IpParts[0]}.{IpParts[1]}.{IpParts[2]}.{IpParts[3]}";
+
+        return $"First host: {firstHost} Last host: {lastHost} Broadcast: {broadcast}";
+
         }
         static string GetSubnetMask(int prefix){
             byte[] parts = new byte[4];
@@ -90,32 +116,6 @@ namespace ConsoleApp100
             }
 
             return $"{parts[0]}.{parts[1]}.{parts[2]}.{parts[3]}";
-        }
-        
-        static int[] calculatePart(int prefix)
-        {
-            int[] res = new int[2];
-            if (prefix < 8)
-            {
-                res[0] = 0;
-                res[1] = 8 - prefix;
-            }
-            else if (prefix < 16)
-            {
-                res[0] = 1;
-                res[1] = 8 - (prefix - 8);
-            }
-            else if (prefix < 24)
-            {
-                res[0] = 2;
-                res[1] = 8 - (prefix - 16);
-            }
-            else
-            {
-                res[0] = 3;
-                res[1] = 32 - prefix;
-            }
-            return res;
         }
         static int getPrefix(int hostNum)
         {
